@@ -10,9 +10,11 @@ def fitness(x, y, z):
     ans = foo(x,y,z)
     
     if ans == 0: # If the answer hits exactly 25, return a massive fitness
-        return 999999
+        return 9999
     else: # Else, return a higher fitness relative to how close the ans is to 0
         return abs(1/ans)
+    
+elitism = 3 # The number of best solutions to keep each generation
     
 # Generate Solutions
 solutions = []
@@ -28,16 +30,19 @@ for i in range(generations):
     for s in solutions:# We want to save both the fitness and the solution
         rankedsolutions.append( (fitness(s[0], s[1], s[2]), s) )
     rankedsolutions.sort(reverse=True)
-    print(f"=== Gen {i} best solutions ===")
-    print(rankedsolutions[0])
+    
     
     # If the fitness is over a certain amount, we consider it to be good enough and stop
-    if rankedsolutions[0][0] > 9999999:
+    if rankedsolutions[0][0] > 9999:
+        print(f"=== Gen {i} best solutions ===")
+        print(rankedsolutions[0])
         print("Solution found!")
         break
     
     # Selection based on fitness
     bestsolutions = rankedsolutions[:100]
+    
+    # solutions are formatted as such: (fitness, (x, y, z))
     
     elements_0 = [] # x values
     elements_1 = [] # y values
@@ -46,12 +51,15 @@ for i in range(generations):
         elements_0.append(s[1][0]) # Save the x
         elements_1.append(s[1][1]) # Save the y
         elements_2.append(s[1][2]) # Save the z
-    
+        
     newGen = []
+    for i in range(elitism):
+        newGen.append( (bestsolutions[i][1]))
+    
     # Dynamic mutation rate
     mutation_rate = max(0.01, 1 - (i/generations)) # Ddecreases over time
     # Selection, Mutation, Crossover
-    for _ in range(1000):
+    for _ in range(1000-elitism):
         # For each value, pick an element from the best solutions and change it by -1 -> 1%
         e1 = random.choice(elements_0) * random.uniform(0.99, 1.01)
         e2 = random.choice(elements_1) * random.uniform(0.99, 1.01)
