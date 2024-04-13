@@ -10,7 +10,7 @@ def fitness(x, y, z):
     ans = foo(x,y,z)
     
     if ans == 0: # If the answer hits exactly 25, return a massive fitness
-        return 9999
+        return 999999
     else: # Else, return a higher fitness relative to how close the ans is to 0
         return abs(1/ans)
     
@@ -22,8 +22,8 @@ for s in range(1000):
                        random.uniform(0,10000), 
                        random.uniform(0,10000)) )
     
-# 10,000 Generations
-for i in range(10000):
+generations = 10000 # 10,000 Generations
+for i in range(generations):
     rankedsolutions = []
     for s in solutions:# We want to save both the fitness and the solution
         rankedsolutions.append( (fitness(s[0], s[1], s[2]), s) )
@@ -32,7 +32,7 @@ for i in range(10000):
     print(rankedsolutions[0])
     
     # If the fitness is over a certain amount, we consider it to be good enough and stop
-    if rankedsolutions[0][0] > 9999:
+    if rankedsolutions[0][0] > 9999999:
         print("Solution found!")
         break
     
@@ -48,6 +48,8 @@ for i in range(10000):
         elements_2.append(s[1][2]) # Save the z
     
     newGen = []
+    # Dynamic mutation rate
+    mutation_rate = max(0.01, 1 - (i/generations)) # Ddecreases over time
     # Selection, Mutation, Crossover
     for _ in range(1000):
         # For each value, pick an element from the best solutions and change it by -1 -> 1%
