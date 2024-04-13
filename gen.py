@@ -14,7 +14,7 @@ def fitness(x, y, z):
     else: # Else, return a higher fitness relative to how close the ans is to 0
         return abs(1/ans)
     
-elitism = 3 # The number of best solutions to keep each generation
+elitism = 4 # The number of best solutions to keep each generation
     
 # Generate Solutions
 solutions = []
