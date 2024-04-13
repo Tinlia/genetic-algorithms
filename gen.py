@@ -1,4 +1,5 @@
 import random 
+import numpy as np
 # A basic Genetic Algorithm Example using "The Builder's" amazing tutorial on Youtube
 
 # Goal: Find the values of x, y, z that satisfy the equation foo(x,y,z) = 0
@@ -13,6 +14,8 @@ def fitness(x, y, z):
         return 9999
     else: # Else, return a higher fitness relative to how close the ans is to 0
         return abs(1/ans)
+    
+best_fitness_scores = [] # Save the best fitness scores for each generation
     
 elitism = 4 # The number of best solutions to keep each generation
     
@@ -29,8 +32,7 @@ for i in range(generations):
     rankedsolutions = []
     for s in solutions:# We want to save both the fitness and the solution
         rankedsolutions.append( (fitness(s[0], s[1], s[2]), s) )
-    rankedsolutions.sort(reverse=True)
-    
+    rankedsolutions.sort(reverse=True)    
     
     # If the fitness is over a certain amount, we consider it to be good enough and stop
     if rankedsolutions[0][0] > 9999:
@@ -58,6 +60,8 @@ for i in range(generations):
     
     # Dynamic mutation rate
     mutation_rate = max(0.01, 1 - (i/generations)) # Ddecreases over time
+    lb = 1 - (mutation_rate) # Lower bound
+    ub = 1 + (mutation_rate) # Upper bound
     # Selection, Mutation, Crossover
     for _ in range((1000-elitism) // 2):  # We'll be adding two solutions per loop iteration
         # Select two parents from the best solutions
@@ -69,8 +73,8 @@ for i in range(generations):
         child2 = (parent2[0], parent1[1], parent2[2])
 
         # Mutate the children
-        child1 = (child1[0] * random.uniform(0.99, 1.01), child1[1] * random.uniform(0.99, 1.01), child1[2] * random.uniform(0.99, 1.01))
-        child2 = (child2[0] * random.uniform(0.99, 1.01), child2[1] * random.uniform(0.99, 1.01), child2[2] * random.uniform(0.99, 1.01))
+        child1 = (child1[0] * random.uniform(lb, ub), child1[1] * random.uniform(lb, ub), child1[2] * random.uniform(lb, ub))
+        child2 = (child2[0] * random.uniform(lb, ub), child2[1] * random.uniform(lb, ub), child2[2] * random.uniform(lb, ub))
 
         # Add the children to the new generation
         newGen.append(child1)
