@@ -59,13 +59,22 @@ for i in range(generations):
     # Dynamic mutation rate
     mutation_rate = max(0.01, 1 - (i/generations)) # Ddecreases over time
     # Selection, Mutation, Crossover
-    for _ in range(1000-elitism):
-        # For each value, pick an element from the best solutions and change it by -1 -> 1%
-        e1 = random.choice(elements_0) * random.uniform(0.99, 1.01)
-        e2 = random.choice(elements_1) * random.uniform(0.99, 1.01)
-        e3 = random.choice(elements_2) * random.uniform(0.99, 1.01)
-        
-        newGen.append( (e1, e2, e3) )
+    for _ in range((1000-elitism) // 2):  # We'll be adding two solutions per loop iteration
+        # Select two parents from the best solutions
+        parent1 = random.choice(bestsolutions)[1]
+        parent2 = random.choice(bestsolutions)[1]
+
+        # Perform crossover to generate two children
+        child1 = (parent1[0], parent2[1], parent1[2])
+        child2 = (parent2[0], parent1[1], parent2[2])
+
+        # Mutate the children
+        child1 = (child1[0] * random.uniform(0.99, 1.01), child1[1] * random.uniform(0.99, 1.01), child1[2] * random.uniform(0.99, 1.01))
+        child2 = (child2[0] * random.uniform(0.99, 1.01), child2[1] * random.uniform(0.99, 1.01), child2[2] * random.uniform(0.99, 1.01))
+
+        # Add the children to the new generation
+        newGen.append(child1)
+        newGen.append(child2)
     
     # Create the new population
     solutions = newGen
