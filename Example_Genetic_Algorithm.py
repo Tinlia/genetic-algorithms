@@ -40,16 +40,6 @@ for i in range(generations):
     
     # Selection based on fitness
     bestsolutions = rankedsolutions[:100]
-    
-    # solutions are formatted as such: (fitness, (x, y, z))
-    
-    elements_0 = [] # x values
-    elements_1 = [] # y values
-    elements_2 = [] # z values
-    for s in bestsolutions:
-        elements_0.append(s[1][0]) # Save the x
-        elements_1.append(s[1][1]) # Save the y
-        elements_2.append(s[1][2]) # Save the z
         
     newGen = []
     for i in range(elitism):
