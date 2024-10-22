@@ -1,23 +1,22 @@
 import random
-
 # Hyperparameters
 POPULATION_SIZE = 1000      # Number of solutions in the population
-GENERATIONS = 10        # Number of generations to run
+GENERATIONS = 500        # Number of generations to run
 
-MUTATION_RATE = 0.4         # 40% chance of initiating mutation
-MUTATION_CHANCE = 0.8       # 80% chance of mutating a node during mutation
+MUTATION_RATE = 0.3         # 20% chance of initiating mutation
+MUTATION_CHANCE = 0.5       # 50% chance of mutating a node during mutation
 CROSSOVER_RATE = 0.3        # 30% crossover rate
-REPLICATION_RATE = 0.05     # 20% replication rate
+REPLICATION_RATE = 0.2     # 20% replication rate
 
 OPERATORS = ['+', '-', '*', '/']
 VARIABLES = ['x', 'y', 'z']
-CUTOFF_FITNESS = 10000     # The fitness at which we consider the solution found
+CUTOFF_FITNESS = 1000     # The fitness at which we consider the solution found
 MAX_HEIGHT = 8              # The maximum depth of the tree (A higher number might require increasing Python's limit)
 
-goal = 315
-x = 6
-y = 9
-z = 300
+goal = 570.7149963378906 # Next minute's open price
+x = 506.6820068359375 # Open 
+y = 500.7799987792969 # High
+z = 530.6700134277344 # Low
 
 # TEST PARAMETERS
 print_method_names = False
@@ -70,9 +69,9 @@ def fitness(root):
     if root is None:
         return 0  # Return a default fitness if the tree is None
 
-    ans = foo(root) - goal
+    ans = abs(foo(root) - goal)
 
-    if ans == 0:
+    if ans <= 1:
         return CUTOFF_FITNESS
     else:
         return abs(1 / ans)
@@ -95,21 +94,29 @@ def crossover(parent1, parent2):
     return tree1, tree2
 
 def get_random_node(root):
+    def traverse(root):
+        if root is not None:
+            nodes.append(root)
+            traverse(root.left)
+            traverse(root.right)
+    
     if root is None:
         return None
 
     nodes = []
-    stack = [root]
+    # stack = [root]
 
-    # Traverse the tree using a stack
-    while stack:
-        node = stack.pop()
-        nodes.append(node)
+    # # Traverse the tree using a stack
+    # while stack:
+    #     node = stack.pop()
+    #     nodes.append(node)
 
-        if node.left:
-            stack.append(node.left)
-        if node.right:
-            stack.append(node.right)
+    #     if node.left:
+    #         stack.append(node.left)
+    #     if node.right:
+    #         stack.append(node.right)
+    
+    traverse(root)
 
     # Randomly select a node from the list of nodes
     return random.choice(nodes)
@@ -165,7 +172,7 @@ def clone(root):
 # TODO: Method to traverse a binary tree
 def mutate(node):
     if print_method_names: print("Mutate")
-    # Base Case
+    # Base Case, don't mutate leaf or null nodes
     if node == None or node.value in VARIABLES:
         return node
     
@@ -295,7 +302,7 @@ for i in range(GENERATIONS):
             newgen.append(child2)
             i += 1
         else:
-            new_pop = Tree(root =mutate( random.choice(bestsolutions)[1].root))
+            new_pop = Tree(root = mutate( random.choice(bestsolutions)[1].root))
             newgen.append(new_pop)
     
     solutions = newgen
