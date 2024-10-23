@@ -1,19 +1,20 @@
 import random
 # Hyperparameters
-POPULATION_SIZE = 1000      # Number of solutions in the population
-GENERATIONS = 500        # Number of generations to run
-
-MUTATION_RATE = 0.3         # 20% chance of initiating mutation
-MUTATION_CHANCE = 0.5       # 50% chance of mutating a node during mutation
-CROSSOVER_RATE = 0.3        # 30% crossover rate
-REPLICATION_RATE = 0.2     # 20% replication rate
+# Modified hyperparameters for better exploration
+POPULATION_SIZE = 1000
+GENERATIONS = 500
+MUTATION_RATE = 0.5
+MUTATION_CHANCE = 0.3  # Reduced to prevent too much disruption
+CROSSOVER_RATE = 0.7  # Increased to promote more exploration
+REPLICATION_RATE = 0.2  # Reduced elite preservation
+TOURNAMENT_SIZE = 10  # For tournament selection
 
 OPERATORS = ['+', '-', '*', '/']
 VARIABLES = ['x', 'y', 'z']
-CUTOFF_FITNESS = 1000     # The fitness at which we consider the solution found
+CUTOFF_FITNESS = 31000     # The fitness at which we consider the solution found
 MAX_HEIGHT = 8              # The maximum depth of the tree (A higher number might require increasing Python's limit)
 
-goal = 570.7149963378906 # Next minute's open price
+goal = 574.7149963378906 # Next minute's open price
 x = 506.6820068359375 # Open 
 y = 500.7799987792969 # High
 z = 530.6700134277344 # Low
@@ -71,25 +72,51 @@ def fitness(root):
 
     ans = abs(foo(root) - goal)
 
-    if ans <= 1:
+    if ans == 0:
         return CUTOFF_FITNESS
     else:
         return abs(1 / ans)
 
+def tournament_selection(ranked_solutions, tournament_size):
+    """Tournament selection for better parent selection"""
+    tournament = random.sample(ranked_solutions, tournament_size)
+    return max(tournament, key=lambda x: x[0])[1]
+
 # Method to perform crossover between two trees
 def crossover(parent1, parent2):
-    # Clone the parents
+    """Enhanced crossover that can swap any subtree"""
     tree1 = Tree(clone(parent1.root))
     tree2 = Tree(clone(parent2.root))
     
-    # Select random nodes from each tree
-    node1 = get_random_node(tree1.root)
-    node2 = get_random_node(tree2.root)
+    # Get all nodes from both trees
+    nodes1 = []
+    nodes2 = []
     
-    # Swap subtrees
-    temp = node1.left
-    node1.left = node2.left
-    node2.left = temp
+    def collect_nodes(root, nodes):
+        if root:
+            nodes.append(root)
+            collect_nodes(root.left, nodes)
+            collect_nodes(root.right, nodes)
+    
+    collect_nodes(tree1.root, nodes1)
+    collect_nodes(tree2.root, nodes2)
+    
+    if not nodes1 or not nodes2:
+        return tree1, tree2
+    
+    # Randomly select crossover points
+    node1 = random.choice(nodes1)
+    node2 = random.choice(nodes2)
+    
+    # Randomly choose whether to swap left or right subtree
+    if random.random() < 0.5:
+        temp = node1.left
+        node1.left = node2.left
+        node2.left = temp
+    else:
+        temp = node1.right
+        node1.right = node2.right
+        node2.right = temp
     
     return tree1, tree2
 
@@ -170,20 +197,39 @@ def clone(root):
     return new_node
       
 # TODO: Method to traverse a binary tree
-def mutate(node):
-    if print_method_names: print("Mutate")
-    # Base Case, don't mutate leaf or null nodes
-    if node == None or node.value in VARIABLES:
+def mutate(node, depth=0):
+    """Enhanced mutation that can modify structure and variables"""
+    if node is None:
         return node
     
-    # 80% chance of mutating a node
     if random.random() < MUTATION_CHANCE:
-        node.value = random.choice(OPERATORS)
+        # Different mutation types
+        mutation_type = random.random()
+        
+        if mutation_type < 0.3:  # Change operator/variable
+            if node.value in OPERATORS:
+                node.value = random.choice(OPERATORS)
+            elif node.value in VARIABLES:
+                node.value = random.choice(VARIABLES)
+                
+        elif mutation_type < 0.5 and depth < MAX_HEIGHT - 1:  # Grow subtree
+            if node.value in VARIABLES:
+                node.value = random.choice(OPERATORS)
+                node.left = Node(value=random.choice(VARIABLES))
+                node.right = Node(value=random.choice(VARIABLES))
+                
+        elif mutation_type < 0.7:  # Prune subtree
+            if node.value in OPERATORS:
+                node.value = random.choice(VARIABLES)
+                node.left = None
+                node.right = None
     
-    node.left = mutate(node.left)
-    node.right = mutate(node.right)      
+    if node.left:
+        node.left = mutate(node.left, depth + 1)
+    if node.right:
+        node.right = mutate(node.right, depth + 1)
     
-    return node        
+    return node      
         
 # Method to print the equation from a tree
 def build_string(node):
@@ -260,55 +306,65 @@ def build_tree(tree, node, height=1):
         tree.size += 1
         height += 1
         
+def build_graph(fitnesses):
+    import matplotlib.pyplot as plt
+    plt.plot(fitnesses)
+    plt.xlabel("Generation")
+    plt.ylabel("Fitness")
+    plt.title("Fitness over Generations")
+    plt.show()
+
 # Generate Solutions
-solutions = []
-for s in range(POPULATION_SIZE):
-    new_tree = Tree(Node(random.choice(OPERATORS)))
-    build_tree(new_tree, new_tree.root)
-    solutions.append(new_tree)
+def run_genetic_programming():
+    print("")
+    solutions = []
+    fitnesses = []
+    for s in range(POPULATION_SIZE):
+        new_tree = Tree(Node(random.choice(OPERATORS)))
+        build_tree(new_tree, new_tree.root)
+        solutions.append(new_tree)
     
-# Main loop
-for i in range(GENERATIONS):
-    if print_solution_sizes: print("Generation", i, "Population Size:", len(solutions))
-    rankedsolutions = []
-    for s in solutions:
-        rankedsolutions.append( (fitness(s.root), s) )
-    rankedsolutions.sort(key=lambda x: x[0], reverse=True)
-    
-    print(f"Gen {i} best fitness: {build_string(rankedsolutions[0][1].root)}")
-    
-    # If the fitness is over a certain amount, we consider it fit enough
-    if rankedsolutions[0][0] >= CUTOFF_FITNESS:
-        print(f"=== Gen {i} solutions ===")
-        print(rankedsolutions[0], build_string(rankedsolutions[0][1].root))
-        print("Solution found!")
-        break
-    
-    # Keep 10% of the best solutions
-    bestsolutions = rankedsolutions[:POPULATION_SIZE // 10]
-    
-    # Build new population
-    newgen = []
-    for i in range(POPULATION_SIZE):
-        if random.random() < REPLICATION_RATE:
-            newgen.append(random.choice(bestsolutions)[1])
-        elif random.random() < CROSSOVER_RATE:
-            parent1 = random.choice(bestsolutions)[1]
-            parent2 = random.choice(bestsolutions)[1]
+    for generation in range(GENERATIONS):
+        # Evaluate fitness
+        ranked_solutions = [(fitness(s.root), s) for s in solutions]
+        ranked_solutions.sort(key=lambda x: x[0], reverse=True)
+        
+        if ranked_solutions[0][0] >= CUTOFF_FITNESS:
+            print(f"Fitness: {ranked_solutions[0][0]}")
+            print(f"Solution: {build_string(ranked_solutions[0][1].root)}")
+            print(f"Solution found in generation {generation}!")
+            build_graph(fitnesses)
+            return ranked_solutions[0][1]
+        
+        # Create new generation
+        new_generation = []
+        
+        # Elitism - keep best 5% unchanged
+        elite_count = POPULATION_SIZE // 20
+        new_generation.extend([s[1] for s in ranked_solutions[:elite_count]])
+        
+        # Fill rest of population
+        while len(new_generation) < POPULATION_SIZE:
+            if random.random() < CROSSOVER_RATE:
+                parent1 = tournament_selection(ranked_solutions, TOURNAMENT_SIZE)
+                parent2 = tournament_selection(ranked_solutions, TOURNAMENT_SIZE)
+                child1, child2 = crossover(parent1, parent2)
+                new_generation.extend([child1, child2])
+            else:
+                parent = tournament_selection(ranked_solutions, TOURNAMENT_SIZE)
+                mutated = Tree(mutate(clone(parent.root)))
+                new_generation.append(mutated)
+        
+        # Trim to population size if needed
+        solutions = new_generation[:POPULATION_SIZE]
+        
+        # Adjust tree sizes
+        for s in solutions:
+            s.size = adjust_tree(s, s.root)
+        
+        fitnesses.append(ranked_solutions[0][0])
+        print(f"Generation {generation}: Best fitness = {ranked_solutions[0][0]}")
+        print(f"Best solution: {build_string(ranked_solutions[0][1].root)}")
+        print("")
 
-            # Crossover
-            child1, child2 = crossover(parent1, parent2)
-            newgen.append(child1)
-            newgen.append(child2)
-            i += 1
-        else:
-            new_pop = Tree(root = mutate( random.choice(bestsolutions)[1].root))
-            newgen.append(new_pop)
-    
-    solutions = newgen
-    
-    # Adjust the size of each solution
-    for s in solutions:
-        # print("\n")
-        s.size = adjust_tree(s, s.root)
-
+run_genetic_programming()
